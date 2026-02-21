@@ -1,0 +1,39 @@
+{
+  "name": "@gns-vault/core",
+  "version": "0.1.0",
+  "description": "GNS Vault Core — Cryptographic vault engine with Ed25519 identity",
+  "author": "GNS Foundation",
+  "license": "SEE LICENSE IN ../../LICENSE.md",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": ["dist/"],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src/ --ext .ts",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist/"
+  },
+  "dependencies": {
+    "@noble/ed25519": "^2.2.0",
+    "@noble/curves": "^1.8.0",
+    "@noble/ciphers": "^1.2.0",
+    "@noble/hashes": "^1.7.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0",
+    "eslint": "^9.0.0",
+    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.0.0"
+  }
+}

@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GNS Auth Demo Store</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #1A3C5E;
+      --secondary: #2874A6;
+      --accent: #1E8449;
+      --bg: #FAFBFC;
+      --dark: #1C2833;
+      --medium: #566573;
+      --border: #E5E8EB;
+      --radius: 8px;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--dark);
+      line-height: 1.6;
+    }
+
+    /* Header */
+    .header {
+      background: var(--primary);
+      color: white;
+      padding: 16px 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header h1 { font-size: 18px; font-weight: 600; }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255,255,255,0.15);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+    }
+
+    /* Main */
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .hero h2 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 12px;
+    }
+    .hero p {
+      font-size: 16px;
+      color: var(--medium);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+
+    /* Auth section */
+    .auth-section {
+      background: white;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      padding: 32px;
+      margin-bottom: 32px;
+    }
+    .auth-section h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .auth-section p {
+      font-size: 14px;
+      color: var(--medium);
+      margin-bottom: 20px;
+    }
+
+    /* Divider */
+    .divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 20px 0;
+      color: var(--medium);
+      font-size: 12px;
+    }
+    .divider::before, .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* Legacy login form */
+    .legacy-form { margin-top: 16px; }
+    .legacy-form input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      font-size: 14px;
+      margin-bottom: 10px;
+      outline: none;
+    }
+    .legacy-form input:focus { border-color: var(--secondary); }
+    .legacy-form button {
+      width: 100%;
+      padding: 10px;
+      background: var(--medium);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .legacy-form button:hover { background: #4a5a6a; }
+
+    /* User card (after auth) */
+    .user-card {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: white;
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      display: none;
+    }
+    .user-card.visible { display: block; }
+    .user-card h3 { margin-bottom: 12px; }
+    .user-card .key {
+      font-family: "SF Mono", Consolas, monospace;
+      font-size: 12px;
+      opacity: 0.8;
+      word-break: break-all;
+    }
+    .user-card .badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 600;
+      background: rgba(255,255,255,0.2);
+      margin-top: 12px;
+    }
+    .user-card .trust-bar {
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      margin-top: 12px;
+    }
+    .user-card .trust-fill {
+      height: 100%;
+      background: #1E8449;
+      border-radius: 2px;
+    }
+
+    /* Code block */
+    .code-block {
+      background: #1C2833;
+      color: #AED6F1;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin: 24px 0;
+      font-family: "SF Mono", Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+    .code-block .comment { color: #566573; }
+    .code-block .string { color: #82E0AA; }
+    .code-block .keyword { color: #F1948A; }
+    .code-block .func { color: #AED6F1; }
+
+    /* Comparison */
+    .comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin: 24px 0;
+    }
+    .compare-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      background: white;
+    }
+    .compare-card h4 { font-size: 14px; margin-bottom: 10px; }
+    .compare-card ul { list-style: none; font-size: 13px; }
+    .compare-card ul li { padding: 4px 0; }
+    .compare-card.gns {
+      border-color: var(--accent);
+      background: #EAFAF1;
+    }
+
+    /* Log */
+    .log {
+      font-family: "SF Mono", Consolas, monospace;
+      font-size: 12px;
+      background: #F4F6F7;
+      border-radius: var(--radius);
+      padding: 16px;
+      max-height: 200px;
+      overflow-y: auto;
+      margin-top: 16px;
+    }
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #E5E8EB;
+    }
+    .log-entry:last-child { border-bottom: none; }
+    .log-time { color: var(--medium); }
+    .log-ok { color: var(--accent); }
+    .log-err { color: #C0392B; }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>🛍️ GNS Demo Store</h1>
+    <div class="header-badge">
+      <span style="width:8px;height:8px;border-radius:50%;background:#1E8449;display:inline-block;"></span>
+      GNS Auth Enabled
+    </div>
+  </div>
+
+  <div class="container">
+
+    <!-- Hero -->
+    <div class="hero">
+      <h2>Welcome to the Demo Store</h2>
+      <p>
+        This reference implementation shows how websites integrate
+        GNS Auth for passwordless, human-verified authentication.
+      </p>
+    </div>
+
+    <!-- User Card (shown after auth) -->
+    <div id="user-card" class="user-card">
+      <h3>✓ Authenticated via GNS</h3>
+      <div>Public Key:</div>
+      <div id="user-key" class="key"></div>
+      <div style="display:flex;gap:12px;margin-top:12px;">
+        <span id="user-badge" class="badge"></span>
+        <span id="user-handle" style="font-size:14px;font-weight:600;"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;opacity:0.8;margin-top:12px;">
+        <span>Trust Score</span>
+        <span id="user-score"></span>
+      </div>
+      <div class="trust-bar">
+        <div id="trust-fill" class="trust-fill" style="width:0%"></div>
+      </div>
+    </div>
+
+    <!-- Auth Section -->
+    <div class="auth-section" id="auth-section">
+      <h3>Sign In</h3>
+      <p>
+        Choose how you want to authenticate. GNS Auth is passwordless,
+        phishing-immune, and includes verified human status.
+      </p>
+
+      <!-- GNS Auth Button Container -->
+      <div id="gns-login" style="display:flex;justify-content:center;"></div>
+
+      <div id="no-extension" style="display:none;text-align:center;margin-top:12px;font-size:13px;color:#566573;">
+        GNS Vault extension not detected.
+        <a href="#" style="color:#2874A6;">Install from Chrome Web Store →</a>
+      </div>
+
+      <div class="divider">or use legacy login</div>
+
+      <!-- Legacy Password Login -->
+      <form class="legacy-form" onsubmit="legacyLogin(event)">
+        <input type="email" placeholder="Email" value="demo@example.com" />
+        <input type="password" placeholder="Password" value="password123" />
+        <button type="submit">Sign in with password</button>
+      </form>
+    </div>
+
+    <!-- Comparison -->
+    <div class="comparison">
+      <div class="compare-card">
+        <h4>❌ Password Login</h4>
+        <ul>
+          <li>⚠️ Password transmitted to server</li>
+          <li>⚠️ Vulnerable to phishing</li>
+          <li>⚠️ Server breach exposes credentials</li>
+          <li>⚠️ No human verification</li>
+          <li>⚠️ Requires password management</li>
+        </ul>
+      </div>
+      <div class="compare-card gns">
+        <h4>✅ GNS Auth</h4>
+        <ul>
+          <li>🔒 Nothing secret transmitted</li>
+          <li>🛡️ Phishing immune (domain-bound)</li>
+          <li>🏗️ No server to breach</li>
+          <li>🏅 Verified Human ✓ (TrIP)</li>
+          <li>⚡ One click, no password</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Integration Code -->
+    <h3 style="margin-top:32px;margin-bottom:12px;">Integration Code</h3>
+    <p style="font-size:14px;color:#566573;margin-bottom:16px;">
+      Under 10 lines to add GNS Auth to your website:
+    </p>
+
+    <div class="code-block">
+      <span class="comment">&lt;!-- 1. Include the SDK --&gt;</span><br>
+      &lt;<span class="keyword">script</span> <span class="func">src</span>=<span class="string">"https://auth.globecrumbs.com/v1/gns-auth.js"</span>&gt;&lt;/<span class="keyword">script</span>&gt;<br><br>
+      <span class="comment">&lt;!-- 2. Add a button container --&gt;</span><br>
+      &lt;<span class="keyword">div</span> <span class="func">id</span>=<span class="string">"gns-login"</span>&gt;&lt;/<span class="keyword">div</span>&gt;<br><br>
+      <span class="comment">&lt;!-- 3. Initialize --&gt;</span><br>
+      &lt;<span class="keyword">script</span>&gt;<br>
+      &nbsp;&nbsp;<span class="func">GNSAuth</span>.<span class="func">init</span>({<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="func">onAuth</span>: (<span class="func">res</span>) =&gt; {<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// res.publicKey, res.signature, res.trustScore</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Send to your server to verify</span><br>
+      &nbsp;&nbsp;&nbsp;&nbsp;}<br>
+      &nbsp;&nbsp;});<br>
+      &nbsp;&nbsp;<span class="func">GNSAuth</span>.<span class="func">renderButton</span>(<span class="string">'#gns-login'</span>);<br>
+      &lt;/<span class="keyword">script</span>&gt;
+    </div>
+
+    <!-- Event Log -->
+    <h3 style="margin-top:32px;margin-bottom:12px;">Auth Event Log</h3>
+    <div id="log" class="log">
+      <div class="log-entry">
+        <span class="log-time">[init]</span> Demo store loaded. Detecting GNS Vault extension...
+      </div>
+    </div>
+
+  </div>
+
+  <!-- GNS Auth SDK (in production, this is from CDN) -->
+  <script type="module">
+    // Simulated GNS Auth SDK (in production, loaded from auth.globecrumbs.com)
+    // For this demo, we wire up the button manually
+
+    const log = document.getElementById('log');
+    function addLog(msg, type = '') {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      entry.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}">${msg}</span>`;
+      log.appendChild(entry);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    // Render GNS Auth button
+    const container = document.getElementById('gns-login');
+    const btn = document.createElement('button');
+    Object.assign(btn.style, {
+      width: '280px',
+      height: '48px',
+      borderRadius: '8px',
+      fontSize: '15px',
+      fontFamily: 'inherit',
+      fontWeight: '500',
+      cursor: 'pointer',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: '10px',
+      background: '#1A3C5E',
+      color: 'white',
+      border: 'none',
+      transition: 'all 0.2s',
+    });
+    btn.innerHTML = '<span style="width:12px;height:12px;border-radius:50%;background:#1E8449;display:inline-block;"></span> Sign in with GNS <span style="font-size:10px;opacity:0.7;">✓ Human</span>';
+    btn.onmouseenter = () => { btn.style.background = '#15324e'; btn.style.transform = 'translateY(-1px)'; };
+    btn.onmouseleave = () => { btn.style.background = '#1A3C5E'; btn.style.transform = 'none'; };
+
+    btn.onclick = () => {
+      addLog('GNS Auth challenge sent to extension...', '');
+
+      // Simulate extension response (in production, this is real)
+      setTimeout(() => {
+        const mockResponse = {
+          publicKey: 'a1b2c3d4e5f6789012345678abcdef0123456789abcdef0123456789abcdef01',
+          signature: 'f'.repeat(128),
+          nonce: Math.random().toString(36).substring(2),
+          trustScore: 87.3,
+          badgeTier: 'gold',
+          handle: '@demo_user',
+          timestamp: new Date().toISOString(),
+        };
+
+        addLog('✓ GNS Auth response received', 'ok');
+        addLog(`  Public Key: ${mockResponse.publicKey.substring(0, 16)}...`, '');
+        addLog(`  Trust Score: ${mockResponse.trustScore}/100`, 'ok');
+        addLog(`  Badge: ${mockResponse.badgeTier}`, 'ok');
+        addLog(`  Handle: ${mockResponse.handle}`, '');
+        addLog('  Signature: verified ✓', 'ok');
+
+        showUser(mockResponse);
+      }, 800);
+    };
+
+    container.appendChild(btn);
+    addLog('GNS Auth button rendered', 'ok');
+
+    // Check for extension (simulated)
+    setTimeout(() => {
+      addLog('Extension detection: checking window.postMessage...', '');
+      // In real usage, GNSAuth.init() handles this
+      addLog('Demo mode: extension simulation active', 'ok');
+    }, 300);
+
+    function showUser(response) {
+      const card = document.getElementById('user-card');
+      card.classList.add('visible');
+      document.getElementById('user-key').textContent = response.publicKey;
+      document.getElementById('user-badge').textContent =
+        `🟨 ${response.badgeTier.charAt(0).toUpperCase() + response.badgeTier.slice(1)}`;
+      document.getElementById('user-handle').textContent = response.handle || '';
+      document.getElementById('user-score').textContent = `${response.trustScore}/100`;
+      document.getElementById('trust-fill').style.width = `${response.trustScore}%`;
+
+      // Hide auth section
+      document.getElementById('auth-section').style.display = 'none';
+    }
+
+    // Legacy login
+    window.legacyLogin = (e) => {
+      e.preventDefault();
+      addLog('Legacy password login submitted', '');
+      addLog('⚠ Password transmitted to server (less secure)', 'err');
+      addLog('✓ Logged in via password', '');
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "extName": {
+    "message": "GNS Vault",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Credential manager with built-in decentralized human identity. Secure your passwords. Prove you're human.",
+    "description": "Extension description"
+  }
+}
