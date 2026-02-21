@@ -1,0 +1,13 @@
+{
+  "name": "@gns-vault/demo-store",
+  "version": "0.2.0",
+  "private": true,
+  "description": "GNS Auth reference demo — shows passwordless sign-in with GNS Vault",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  }
+}

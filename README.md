@@ -44,6 +44,15 @@ GNS Vault replaces passwords with cryptographic identity. One Ed25519 key secure
 
 **Total: 111 tests passing across 4 test suites.**
 
+## Live Demo
+
+| Service | URL | Status |
+|---------|-----|--------|
+| Verify API | `vault.gcrumbs.com` | ✅ Live |
+| Demo Store | `demo.gcrumbs.com` | ✅ Live |
+
+Try it: Open the [Demo Store](https://demo.gcrumbs.com), install the [GNS Vault extension](https://github.com/GNS-Foundation/gns-vault/releases), and click **"Sign in with GNS"** for real passwordless authentication.
+
 ## Cryptographic Stack
 
 | Primitive | Algorithm | Standard | Purpose |

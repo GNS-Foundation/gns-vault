@@ -1,54 +1,108 @@
 /**
  * GNS Vault — Auth Bridge (Content Script Module)
  *
- * This module intercepts GNS Auth SDK messages from the page
+ * This module intercepts GNS Auth messages from the page
  * and routes them through the extension's background service worker.
  *
- * Flow:
- *   Page (GNS Auth SDK) ──[window.postMessage]──→ Content Script (Auth Bridge)
- *     ──[chrome.runtime.sendMessage]──→ Background (signs challenge)
- *       ──[response]──→ Content Script ──[window.postMessage]──→ Page
+ * Supports TWO protocols:
+ *   A) CustomEvent — simple, preferred for direct integration
+ *      Page fires:   CustomEvent('gns-auth-request', { detail: challenge })
+ *      Bridge fires: CustomEvent('gns-auth-response', { detail: response })
  *
- * The bridge also:
- *   - Announces extension presence to the SDK
- *   - Validates challenge origins
- *   - Handles user consent for new origins
+ *   B) window.postMessage — used by the GNS Auth SDK (gns-auth.js)
+ *      Page posts:   { type: 'GNS_AUTH_SDK', action: 'challenge', challenge }
+ *      Bridge posts: { type: 'GNS_AUTH_RESPONSE', response }
+ *
+ * Flow:
+ *   Page ──→ Content Script (Auth Bridge) ──→ Background (signs with Ed25519)
+ *     ──→ Content Script ──→ Page (signed response with publicKey + signature)
  *
  * @module vault-extension/content/auth-bridge
  */
 
+import { showConsentOverlay } from './consent-overlay';
+
+// === Protocol constants ===
 const GNS_AUTH_MESSAGE_TYPE = 'GNS_AUTH_SDK';
 const GNS_AUTH_RESPONSE_TYPE = 'GNS_AUTH_RESPONSE';
 const GNS_EXTENSION_DETECT = 'GNS_EXTENSION_DETECT';
 const GNS_EXTENSION_PRESENT = 'GNS_EXTENSION_PRESENT';
 
-import { showConsentOverlay } from './consent-overlay';
+// === CustomEvent protocol names ===
+const CE_AUTH_REQUEST = 'gns-auth-request';
+const CE_AUTH_RESPONSE = 'gns-auth-response';
+const CE_EXTENSION_DETECT = 'gns-extension-detect';
+const CE_EXTENSION_PRESENT = 'gns-extension-present';
 
 /** Origins the user has previously approved for GNS Auth */
 let approvedOrigins: Set<string> = new Set();
 
+// ============================================================
+// INITIALIZATION
+// ============================================================
+
 /**
- * Initialize the auth bridge.
+ * Initialize the auth bridge — called by content/index.ts on every page load.
  */
 export function initAuthBridge(): void {
-  // Listen for messages from the page (GNS Auth SDK)
-  window.addEventListener('message', handlePageMessage);
+  // Protocol A: Listen for CustomEvent from the page
+  window.addEventListener(CE_AUTH_REQUEST, ((e: Event) => handleCustomEventAuth(e as CustomEvent)) as EventListener);
+  window.addEventListener(CE_EXTENSION_DETECT, () => announcePresence());
 
-  // Announce extension presence
+  // Protocol B: Listen for postMessage from the GNS Auth SDK
+  window.addEventListener('message', handlePostMessageAuth);
+
+  // Announce extension presence via BOTH protocols
   announcePresence();
 
   // Load approved origins from storage
   loadApprovedOrigins();
 
-  // Set DOM marker for SDK detection
+  // Set DOM attribute for SDK detection
   document.documentElement.setAttribute('data-gns-vault-extension', 'true');
+
+  console.log('[GNS Vault] Auth bridge initialized on', window.location.origin);
 }
 
+// ============================================================
+// PROTOCOL A: CustomEvent handlers
+// ============================================================
+
 /**
- * Handle messages from the GNS Auth SDK on the page.
+ * Handle `gns-auth-request` CustomEvent dispatched by the page.
+ * The event.detail contains the challenge object:
+ *   { nonce, origin, timestamp, expiresIn, appId? }
  */
-function handlePageMessage(event: MessageEvent): void {
-  // Only accept messages from the same window
+async function handleCustomEventAuth(event: CustomEvent): Promise<void> {
+  const challenge = event.detail;
+
+  if (!challenge || !challenge.nonce) {
+    console.warn('[GNS Vault] Invalid auth request — missing nonce');
+    return;
+  }
+
+  console.log('[GNS Vault] Auth request received via CustomEvent', { nonce: challenge.nonce });
+
+  // Fill in origin if the page didn't provide it
+  const fullChallenge = {
+    nonce: challenge.nonce,
+    origin: challenge.origin || window.location.origin,
+    timestamp: challenge.timestamp || new Date().toISOString(),
+    expiresIn: challenge.expiresIn || 300,
+    appId: challenge.appId,
+  };
+
+  await processAuthChallenge(fullChallenge, 'customEvent');
+}
+
+// ============================================================
+// PROTOCOL B: postMessage handlers
+// ============================================================
+
+/**
+ * Handle window.postMessage from the GNS Auth SDK (gns-auth.js).
+ */
+function handlePostMessageAuth(event: MessageEvent): void {
   if (event.source !== window) return;
 
   const data = event.data;
@@ -62,29 +116,39 @@ function handlePageMessage(event: MessageEvent): void {
 
   // Auth challenge from SDK
   if (data.type === GNS_AUTH_MESSAGE_TYPE && data.action === 'challenge') {
-    handleAuthChallenge(data.challenge);
+    processAuthChallenge(data.challenge, 'postMessage');
     return;
   }
 }
 
-/**
- * Handle an authentication challenge from the GNS Auth SDK.
- */
-async function handleAuthChallenge(challenge: {
-  nonce: string;
-  origin: string;
-  timestamp: string;
-  expiresIn: number;
-  appId?: string;
-}): Promise<void> {
+// ============================================================
+// SHARED: Process auth challenge (both protocols converge here)
+// ============================================================
+
+async function processAuthChallenge(
+  challenge: {
+    nonce: string;
+    origin: string;
+    timestamp: string;
+    expiresIn: number;
+    appId?: string;
+  },
+  protocol: 'customEvent' | 'postMessage'
+): Promise<void> {
   // Validate the challenge origin matches the actual page origin
-  if (challenge.origin !== window.location.origin) {
-    sendAuthError('ORIGIN_MISMATCH', 'Challenge origin does not match page origin');
+  // For file:// URLs, be lenient
+  const isFileUrl = window.location.protocol === 'file:';
+  if (!isFileUrl && challenge.origin !== window.location.origin) {
+    sendAuthError('ORIGIN_MISMATCH', 'Challenge origin does not match page origin', protocol);
     return;
   }
 
-  // Check if this origin is approved
-  if (!approvedOrigins.has(challenge.origin)) {
+  // For file:// or localhost, skip consent overlay (developer mode)
+  const isDev = isFileUrl ||
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1';
+
+  if (!isDev && !approvedOrigins.has(challenge.origin)) {
     // Show consent overlay to the user
     const approved = await showConsentOverlay({
       origin: challenge.origin,
@@ -92,7 +156,7 @@ async function handleAuthChallenge(challenge: {
     });
 
     if (!approved) {
-      sendAuthError('USER_DENIED', 'User denied GNS Auth for this origin');
+      sendAuthError('USER_DENIED', 'User denied GNS Auth for this origin', protocol);
       return;
     }
 
@@ -115,56 +179,92 @@ async function handleAuthChallenge(challenge: {
     if (!response.success) {
       sendAuthError(
         'SIGN_FAILED',
-        response.error || 'Failed to sign challenge. Is the vault unlocked?'
+        response.error || 'Failed to sign challenge. Is the vault unlocked?',
+        protocol
       );
       return;
     }
 
-    // Send signed response back to the page
+    console.log('[GNS Vault] Auth challenge signed successfully');
+
+    // Send signed response back to the page via BOTH protocols
+    const authResponse = {
+      ...response.data,
+      nonce: challenge.nonce,
+    };
+
+    // Always fire CustomEvent (pages can listen for this)
+    window.dispatchEvent(
+      new CustomEvent(CE_AUTH_RESPONSE, { detail: authResponse })
+    );
+
+    // Also send via postMessage (for SDK compatibility)
     window.postMessage(
       {
         type: GNS_AUTH_RESPONSE_TYPE,
-        response: {
-          ...response.data,
-          nonce: challenge.nonce,
-        },
+        response: authResponse,
       },
       '*'
     );
+
   } catch (err) {
-    sendAuthError('INTERNAL', (err as Error).message);
+    sendAuthError('INTERNAL', (err as Error).message, protocol);
   }
 }
 
-/**
- * Announce extension presence to the page.
- */
+// ============================================================
+// Announce extension presence
+// ============================================================
+
 function announcePresence(): void {
+  // CustomEvent protocol
+  window.dispatchEvent(
+    new CustomEvent(CE_EXTENSION_PRESENT, {
+      detail: { version: '0.2.0' },
+    })
+  );
+
+  // postMessage protocol
   window.postMessage(
     {
       type: GNS_EXTENSION_PRESENT,
-      version: '0.1.0',
+      version: '0.2.0',
     },
     '*'
   );
+
+  console.log('[GNS Vault] Extension presence announced');
 }
 
-/**
- * Send an error response to the page.
- */
-function sendAuthError(code: string, message: string): void {
+// ============================================================
+// Error responses
+// ============================================================
+
+function sendAuthError(code: string, message: string, protocol: 'customEvent' | 'postMessage'): void {
+  const error = { code, message };
+
+  console.warn('[GNS Vault] Auth error:', code, message);
+
+  // Fire on BOTH protocols regardless of source
+  window.dispatchEvent(
+    new CustomEvent(CE_AUTH_RESPONSE, {
+      detail: { error },
+    })
+  );
+
   window.postMessage(
     {
       type: GNS_AUTH_RESPONSE_TYPE,
-      error: { code, message },
+      error,
     },
     '*'
   );
 }
 
-/**
- * Send a message to the background service worker and wait for response.
- */
+// ============================================================
+// Background communication
+// ============================================================
+
 function sendToBackground(
   message: Record<string, unknown>
 ): Promise<{ success: boolean; data?: Record<string, unknown>; error?: string }> {
@@ -177,14 +277,15 @@ function sendToBackground(
         });
         return;
       }
-      resolve(response || { success: false, error: 'No response' });
+      resolve(response || { success: false, error: 'No response from background' });
     });
   });
 }
 
-/**
- * Load previously approved origins from extension storage.
- */
+// ============================================================
+// Approved origins storage
+// ============================================================
+
 async function loadApprovedOrigins(): Promise<void> {
   try {
     const stored = await chrome.storage.local.get('approvedAuthOrigins');
@@ -196,9 +297,6 @@ async function loadApprovedOrigins(): Promise<void> {
   }
 }
 
-/**
- * Save approved origins to extension storage.
- */
 async function saveApprovedOrigins(): Promise<void> {
   try {
     await chrome.storage.local.set({

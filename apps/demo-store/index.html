@@ -1,450 +1,689 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GNS Auth Demo Store</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acme Store — GNS Auth Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #0a0e17;
+    --bg-card: #111827;
+    --bg-card-hover: #1a2332;
+    --bg-surface: #0f1520;
+    --gns-cyan: #00e5ff;
+    --gns-cyan-dim: rgba(0,229,255,0.15);
+    --gns-cyan-glow: rgba(0,229,255,0.3);
+    --text-primary: #e8edf5;
+    --text-secondary: #8892a4;
+    --text-muted: #545d6e;
+    --border: rgba(255,255,255,0.06);
+    --border-active: rgba(0,229,255,0.25);
+    --success: #10b981;
+    --success-dim: rgba(16,185,129,0.15);
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow-glow: 0 0 40px rgba(0,229,255,0.08);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.02) 1px, transparent 1px);
+    background-size: 60px 60px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .wrapper { position: relative; z-index: 1; max-width: 960px; margin: 0 auto; padding: 0 24px; }
 
-    :root {
-      --primary: #1A3C5E;
-      --secondary: #2874A6;
-      --accent: #1E8449;
-      --bg: #FAFBFC;
-      --dark: #1C2833;
-      --medium: #566573;
-      --border: #E5E8EB;
-      --radius: 8px;
-    }
+  /* NAV */
+  nav { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; border-bottom: 1px solid var(--border); }
+  .nav-brand { display: flex; align-items: center; gap: 10px; }
+  .nav-logo { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--gns-cyan), #0099cc); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: var(--bg-deep); }
+  .nav-title { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .nav-tag { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--gns-cyan); background: var(--gns-cyan-dim); padding: 3px 8px; border-radius: 4px; letter-spacing: 0.5px; }
+  .nav-links { display: flex; gap: 24px; align-items: center; }
+  .nav-links a { color: var(--text-secondary); text-decoration: none; font-size: 14px; font-weight: 500; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text-primary); }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--dark);
-      line-height: 1.6;
-    }
+  /* HERO */
+  .hero { text-align: center; padding: 80px 0 48px; position: relative; }
+  .hero::before { content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 500px; height: 500px; background: radial-gradient(circle, rgba(0,229,255,0.06) 0%, transparent 70%); pointer-events: none; }
+  .hero-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-family: 'JetBrains Mono', monospace; color: var(--gns-cyan); background: var(--gns-cyan-dim); border: 1px solid rgba(0,229,255,0.12); padding: 6px 14px; border-radius: 100px; margin-bottom: 24px; letter-spacing: 0.5px; }
+  .hero-label .dot { width: 6px; height: 6px; border-radius: 50%; animation: pulse 2s ease-in-out infinite; }
+  .hero-label .dot.connected { background: var(--success); }
+  .hero-label .dot.disconnected { background: var(--warning); }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  .hero h1 { font-size: clamp(36px, 5vw, 52px); font-weight: 700; letter-spacing: -1.5px; line-height: 1.1; margin-bottom: 16px; }
+  .hero h1 span { background: linear-gradient(135deg, var(--gns-cyan), #66f0ff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero p { font-size: 17px; color: var(--text-secondary); max-width: 520px; margin: 0 auto; line-height: 1.6; }
 
-    /* Header */
-    .header {
-      background: var(--primary);
-      color: white;
-      padding: 16px 32px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-    .header h1 { font-size: 18px; font-weight: 600; }
-    .header-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255,255,255,0.15);
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-    }
+  /* AUTH SECTION */
+  .auth-section { margin: 48px auto; max-width: 480px; }
+  .auth-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; text-align: center; box-shadow: var(--shadow-glow); transition: border-color 0.3s; }
+  .auth-card:hover { border-color: var(--border-active); }
+  .auth-card h2 { font-size: 20px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; }
+  .auth-card .subtitle { font-size: 14px; color: var(--text-secondary); margin-bottom: 32px; }
 
-    /* Main */
-    .container {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 40px 24px;
-    }
+  /* GNS AUTH BUTTON */
+  .gns-auth-btn { display: inline-flex; align-items: center; gap: 12px; background: linear-gradient(135deg, var(--gns-cyan), #00b8d4); color: var(--bg-deep); border: none; padding: 14px 32px; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; letter-spacing: -0.2px; }
+  .gns-auth-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(0,229,255,0.25); }
+  .gns-auth-btn:active { transform: translateY(0); }
+  .gns-auth-btn .icon { width: 20px; height: 20px; border-radius: 4px; background: rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .gns-auth-btn.loading { pointer-events: none; opacity: 0.8; }
+  .gns-auth-btn.loading::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); animation: shimmer 1.5s infinite; }
+  @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
 
-    /* Hero */
-    .hero {
-      text-align: center;
-      margin-bottom: 48px;
-    }
-    .hero h2 {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--primary);
-      margin-bottom: 12px;
-    }
-    .hero p {
-      font-size: 16px;
-      color: var(--medium);
-      max-width: 480px;
-      margin: 0 auto;
-    }
+  .auth-divider { display: flex; align-items: center; gap: 16px; margin: 24px 0; color: var(--text-muted); font-size: 12px; font-family: 'JetBrains Mono', monospace; }
+  .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .auth-alt { font-size: 13px; color: var(--text-muted); }
+  .auth-alt a { color: var(--text-secondary); text-decoration: underline; text-underline-offset: 3px; }
 
-    /* Auth section */
-    .auth-section {
-      background: white;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      padding: 32px;
-      margin-bottom: 32px;
-    }
-    .auth-section h3 {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 8px;
-    }
-    .auth-section p {
-      font-size: 14px;
-      color: var(--medium);
-      margin-bottom: 20px;
-    }
+  /* IDENTITY CARD (post-auth) */
+  .identity-result { display: none; animation: slideUp 0.4s ease; }
+  .identity-result.visible { display: block; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 
-    /* Divider */
-    .divider {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin: 20px 0;
-      color: var(--medium);
-      font-size: 12px;
-    }
-    .divider::before, .divider::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: var(--border);
-    }
+  .identity-card { background: var(--bg-card); border: 1px solid var(--border-active); border-radius: var(--radius); padding: 32px; position: relative; overflow: hidden; }
+  .identity-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--gns-cyan), var(--success), var(--gns-cyan)); }
 
-    /* Legacy login form */
-    .legacy-form { margin-top: 16px; }
-    .legacy-form input {
-      width: 100%;
-      padding: 10px 14px;
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-size: 14px;
-      margin-bottom: 10px;
-      outline: none;
-    }
-    .legacy-form input:focus { border-color: var(--secondary); }
-    .legacy-form button {
-      width: 100%;
-      padding: 10px;
-      background: var(--medium);
-      color: white;
-      border: none;
-      border-radius: 4px;
-      font-size: 14px;
-      cursor: pointer;
-    }
-    .legacy-form button:hover { background: #4a5a6a; }
+  .id-header { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+  .id-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, var(--gns-cyan-dim), rgba(16,185,129,0.15)); border: 2px solid var(--gns-cyan); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+  .id-info h3 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
+  .id-info .handle { font-size: 14px; color: var(--gns-cyan); font-family: 'JetBrains Mono', monospace; }
+  .id-info .pubkey { font-size: 11px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+  .id-verified-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 100px; margin-left: auto; }
+  .id-verified-badge .check { width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 9px; font-weight: 700; }
 
-    /* User card (after auth) */
-    .user-card {
-      background: linear-gradient(135deg, var(--primary), var(--secondary));
-      color: white;
-      border-radius: var(--radius);
-      padding: 24px;
-      margin-bottom: 24px;
-      display: none;
-    }
-    .user-card.visible { display: block; }
-    .user-card h3 { margin-bottom: 12px; }
-    .user-card .key {
-      font-family: "SF Mono", Consolas, monospace;
-      font-size: 12px;
-      opacity: 0.8;
-      word-break: break-all;
-    }
-    .user-card .badge {
-      display: inline-block;
-      padding: 3px 10px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 600;
-      background: rgba(255,255,255,0.2);
-      margin-top: 12px;
-    }
-    .user-card .trust-bar {
-      height: 4px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 2px;
-      margin-top: 12px;
-    }
-    .user-card .trust-fill {
-      height: 100%;
-      background: #1E8449;
-      border-radius: 2px;
-    }
+  .id-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-box { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 12px; text-align: center; }
+  .stat-value { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .stat-value.cyan { color: var(--gns-cyan); }
+  .stat-value.green { color: var(--success); }
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.3px; }
 
-    /* Code block */
-    .code-block {
-      background: #1C2833;
-      color: #AED6F1;
-      border-radius: var(--radius);
-      padding: 20px;
-      margin: 24px 0;
-      font-family: "SF Mono", Consolas, monospace;
-      font-size: 13px;
-      line-height: 1.7;
-      overflow-x: auto;
-    }
-    .code-block .comment { color: #566573; }
-    .code-block .string { color: #82E0AA; }
-    .code-block .keyword { color: #F1948A; }
-    .code-block .func { color: #AED6F1; }
+  .badge-display { display: flex; align-items: center; justify-content: center; gap: 12px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 24px; }
+  .badge-icon { font-size: 32px; line-height: 1; }
+  .badge-info .badge-name { font-size: 16px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+  .badge-info .badge-desc { font-size: 12px; color: var(--text-secondary); }
 
-    /* Comparison */
-    .comparison {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin: 24px 0;
-    }
-    .compare-card {
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      background: white;
-    }
-    .compare-card h4 { font-size: 14px; margin-bottom: 10px; }
-    .compare-card ul { list-style: none; font-size: 13px; }
-    .compare-card ul li { padding: 4px 0; }
-    .compare-card.gns {
-      border-color: var(--accent);
-      background: #EAFAF1;
-    }
+  .api-response { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px; text-align: left; position: relative; }
+  .api-response-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .api-response-label { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--text-muted); letter-spacing: 0.5px; }
+  .api-response-status { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: var(--success); }
+  .api-response pre { font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.6; color: var(--text-secondary); overflow-x: auto; white-space: pre; }
+  .api-response pre .key { color: var(--gns-cyan); }
+  .api-response pre .str { color: #a5d6ff; }
+  .api-response pre .num { color: #f0abfc; }
+  .api-response pre .bool-true { color: var(--success); }
+  .api-response pre .bool-false { color: var(--danger); }
 
-    /* Log */
-    .log {
-      font-family: "SF Mono", Consolas, monospace;
-      font-size: 12px;
-      background: #F4F6F7;
-      border-radius: var(--radius);
-      padding: 16px;
-      max-height: 200px;
-      overflow-y: auto;
-      margin-top: 16px;
-    }
-    .log-entry {
-      padding: 4px 0;
-      border-bottom: 1px solid #E5E8EB;
-    }
-    .log-entry:last-child { border-bottom: none; }
-    .log-time { color: var(--medium); }
-    .log-ok { color: var(--accent); }
-    .log-err { color: #C0392B; }
-  </style>
+  .sign-out-btn { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--border); color: var(--text-secondary); padding: 10px 20px; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: all 0.2s; margin-top: 20px; }
+  .sign-out-btn:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* HOW IT WORKS */
+  .how-section { padding: 64px 0; border-top: 1px solid var(--border); }
+  .how-section h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.8px; text-align: center; margin-bottom: 48px; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+  .step { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 24px; transition: all 0.25s; }
+  .step:hover { border-color: var(--border-active); transform: translateY(-2px); }
+  .step-num { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--gns-cyan); background: var(--gns-cyan-dim); width: 28px; height: 28px; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 16px; font-weight: 600; }
+  .step h3 { font-size: 15px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.2px; }
+  .step p { font-size: 13px; color: var(--text-secondary); line-height: 1.55; }
+
+  /* CODE SECTION */
+  .code-section { padding: 48px 0 64px; border-top: 1px solid var(--border); }
+  .code-section h2 { font-size: 28px; font-weight: 700; letter-spacing: -0.8px; text-align: center; margin-bottom: 12px; }
+  .code-section .desc { text-align: center; color: var(--text-secondary); font-size: 15px; margin-bottom: 32px; }
+  .code-block { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .code-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: rgba(0,0,0,0.3); border-bottom: 1px solid var(--border); }
+  .code-dots { display: flex; gap: 6px; }
+  .code-dots span { width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted); opacity: 0.4; }
+  .code-lang { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-muted); }
+  .code-block pre { padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; overflow-x: auto; color: var(--text-secondary); }
+  .code-block .comment { color: var(--text-muted); }
+  .code-block .tag { color: var(--gns-cyan); }
+  .code-block .attr { color: #c4b5fd; }
+  .code-block .str { color: #a5d6ff; }
+  .code-block .fn { color: #fbbf24; }
+  .code-block .kw { color: #f472b6; }
+
+  /* FOOTER */
+  footer { border-top: 1px solid var(--border); padding: 32px 0; text-align: center; }
+  .footer-row { display: flex; align-items: center; justify-content: center; gap: 24px; margin-bottom: 12px; }
+  .footer-link { font-size: 13px; color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
+  .footer-link:hover { color: var(--text-secondary); }
+  .footer-note { font-size: 12px; color: var(--text-muted); font-family: 'JetBrains Mono', monospace; }
+  .footer-note a { color: var(--gns-cyan); text-decoration: none; }
+
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--bg-card); border: 1px solid var(--border-active); border-radius: var(--radius-sm); padding: 14px 20px; font-size: 13px; color: var(--text-primary); box-shadow: 0 12px 40px rgba(0,0,0,0.4); z-index: 1000; transform: translateY(100px); opacity: 0; transition: all 0.3s ease; display: flex; align-items: center; gap: 10px; max-width: 400px; }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* EXTENSION WARNING */
+  .ext-notice { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); border-radius: var(--radius-sm); padding: 16px 20px; text-align: left; margin-top: 20px; display: none; }
+  .ext-notice.visible { display: block; }
+  .ext-notice h4 { font-size: 14px; font-weight: 600; color: var(--warning); margin-bottom: 6px; }
+  .ext-notice p { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+  .ext-notice code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px; }
+  .ext-notice.success { background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
+  .ext-notice.success h4 { color: var(--success); }
+
+  .demo-btn { display: inline-block; margin-top: 12px; padding: 8px 16px; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius-sm); color: var(--gns-cyan); font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+  .demo-btn:hover { border-color: var(--gns-cyan); background: var(--gns-cyan-dim); }
+
+  @media (max-width: 640px) {
+    .steps { grid-template-columns: 1fr; }
+    .id-stats { grid-template-columns: repeat(2, 1fr); }
+    .nav-links { display: none; }
+    .auth-card { padding: 28px 20px; }
+  }
+</style>
 </head>
 <body>
 
-  <!-- Header -->
-  <div class="header">
-    <h1>🛍️ GNS Demo Store</h1>
-    <div class="header-badge">
-      <span style="width:8px;height:8px;border-radius:50%;background:#1E8449;display:inline-block;"></span>
-      GNS Auth Enabled
+<div class="wrapper">
+  <nav>
+    <div class="nav-brand">
+      <div class="nav-logo">A</div>
+      <span class="nav-title">Acme Store</span>
+      <span class="nav-tag">DEMO</span>
     </div>
-  </div>
-
-  <div class="container">
-
-    <!-- Hero -->
-    <div class="hero">
-      <h2>Welcome to the Demo Store</h2>
-      <p>
-        This reference implementation shows how websites integrate
-        GNS Auth for passwordless, human-verified authentication.
-      </p>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#integrate">Integrate</a>
+      <a href="https://github.com/GNS-Foundation/gns-vault" target="_blank">GitHub</a>
     </div>
+  </nav>
 
-    <!-- User Card (shown after auth) -->
-    <div id="user-card" class="user-card">
-      <h3>✓ Authenticated via GNS</h3>
-      <div>Public Key:</div>
-      <div id="user-key" class="key"></div>
-      <div style="display:flex;gap:12px;margin-top:12px;">
-        <span id="user-badge" class="badge"></span>
-        <span id="user-handle" style="font-size:14px;font-weight:600;"></span>
-      </div>
-      <div style="display:flex;justify-content:space-between;font-size:12px;opacity:0.8;margin-top:12px;">
-        <span>Trust Score</span>
-        <span id="user-score"></span>
-      </div>
-      <div class="trust-bar">
-        <div id="trust-fill" class="trust-fill" style="width:0%"></div>
-      </div>
+  <section class="hero">
+    <div class="hero-label" id="status-label">
+      <span class="dot disconnected" id="status-dot"></span>
+      <span id="status-text">detecting extension...</span>
     </div>
+    <h1>Sign in with your <span>identity</span>,<br>not a password</h1>
+    <p>This demo store authenticates users via GNS Protocol. No email, no password, no OAuth. Just your Ed25519 key proving you're human.</p>
+  </section>
 
-    <!-- Auth Section -->
-    <div class="auth-section" id="auth-section">
-      <h3>Sign In</h3>
-      <p>
-        Choose how you want to authenticate. GNS Auth is passwordless,
-        phishing-immune, and includes verified human status.
+  <section class="auth-section">
+    <!-- Pre-auth -->
+    <div id="auth-prompt" class="auth-card">
+      <h2>Welcome back</h2>
+      <p class="subtitle">Authenticate with your GNS identity to continue</p>
+
+      <button class="gns-auth-btn" id="gns-login-btn" onclick="startAuth()">
+        <span class="icon">G</span>
+        Sign in with GNS
+      </button>
+
+      <div class="auth-divider">no password needed</div>
+
+      <p class="auth-alt">
+        Don't have GNS Vault? <a href="https://github.com/GNS-Foundation/gns-vault" target="_blank">Get the extension</a>
       </p>
 
-      <!-- GNS Auth Button Container -->
-      <div id="gns-login" style="display:flex;justify-content:center;"></div>
-
-      <div id="no-extension" style="display:none;text-align:center;margin-top:12px;font-size:13px;color:#566573;">
-        GNS Vault extension not detected.
-        <a href="#" style="color:#2874A6;">Install from Chrome Web Store →</a>
+      <!-- Extension status notices -->
+      <div class="ext-notice" id="ext-detected">
+        <h4>Extension detected</h4>
+        <p>GNS Vault is ready. Click "Sign in with GNS" above. Make sure your vault is unlocked first.</p>
       </div>
 
-      <div class="divider">or use legacy login</div>
-
-      <!-- Legacy Password Login -->
-      <form class="legacy-form" onsubmit="legacyLogin(event)">
-        <input type="email" placeholder="Email" value="demo@example.com" />
-        <input type="password" placeholder="Password" value="password123" />
-        <button type="submit">Sign in with password</button>
-      </form>
-    </div>
-
-    <!-- Comparison -->
-    <div class="comparison">
-      <div class="compare-card">
-        <h4>❌ Password Login</h4>
-        <ul>
-          <li>⚠️ Password transmitted to server</li>
-          <li>⚠️ Vulnerable to phishing</li>
-          <li>⚠️ Server breach exposes credentials</li>
-          <li>⚠️ No human verification</li>
-          <li>⚠️ Requires password management</li>
-        </ul>
+      <div class="ext-notice" id="ext-not-found">
+        <h4>Extension not detected</h4>
+        <p>
+          GNS Vault extension is required. If using a local file, go to
+          <code>chrome://extensions</code> > GNS Vault > Details > enable
+          <strong>"Allow access to file URLs"</strong>, then reload.
+        </p>
+        <button class="demo-btn" onclick="runDemoMode()">Run demo with real identity</button>
       </div>
-      <div class="compare-card gns">
-        <h4>✅ GNS Auth</h4>
-        <ul>
-          <li>🔒 Nothing secret transmitted</li>
-          <li>🛡️ Phishing immune (domain-bound)</li>
-          <li>🏗️ No server to breach</li>
-          <li>🏅 Verified Human ✓ (TrIP)</li>
-          <li>⚡ One click, no password</li>
-        </ul>
+
+      <div class="ext-notice" id="ext-vault-locked">
+        <h4>Vault is locked</h4>
+        <p>Click the GNS Vault extension icon and unlock your vault, then try again.</p>
       </div>
     </div>
 
-    <!-- Integration Code -->
-    <h3 style="margin-top:32px;margin-bottom:12px;">Integration Code</h3>
-    <p style="font-size:14px;color:#566573;margin-bottom:16px;">
-      Under 10 lines to add GNS Auth to your website:
-    </p>
+    <!-- Post-auth -->
+    <div class="identity-result" id="auth-result">
+      <div class="identity-card">
+        <div class="id-header">
+          <div class="id-avatar" id="id-avatar"></div>
+          <div class="id-info">
+            <h3 id="id-name">-</h3>
+            <div class="handle" id="id-handle">@-</div>
+            <div class="pubkey" id="id-pubkey">-</div>
+          </div>
+          <div class="id-verified-badge" id="id-badge">
+            <span class="check">&#10003;</span>
+            <span id="id-badge-text">Verified Human</span>
+          </div>
+        </div>
 
+        <div class="badge-display" id="badge-display">
+          <span class="badge-icon" id="badge-icon"></span>
+          <div class="badge-info">
+            <div class="badge-name" id="badge-name">-</div>
+            <div class="badge-desc" id="badge-desc">-</div>
+          </div>
+        </div>
+
+        <div class="id-stats">
+          <div class="stat-box"><div class="stat-value cyan" id="stat-trust">-</div><div class="stat-label">TRUST</div></div>
+          <div class="stat-box"><div class="stat-value" id="stat-crumbs">-</div><div class="stat-label">CRUMBS</div></div>
+          <div class="stat-box"><div class="stat-value" id="stat-age">-</div><div class="stat-label">DAYS</div></div>
+          <div class="stat-box"><div class="stat-value green" id="stat-human">-</div><div class="stat-label">HUMAN</div></div>
+        </div>
+
+        <div class="api-response">
+          <div class="api-response-header">
+            <span class="api-response-label">vault.gcrumbs.com/v1/verify</span>
+            <span class="api-response-status" id="api-status">200 OK</span>
+          </div>
+          <pre id="api-json"></pre>
+        </div>
+
+        <button class="sign-out-btn" onclick="signOut()">&#8592; Sign out</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="how-section" id="how">
+    <h2>How GNS Auth Works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <h3>User clicks "Sign in with GNS"</h3>
+        <p>The website generates a cryptographic challenge (random nonce + origin + timestamp) and dispatches it to the page.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <h3>Extension signs the challenge</h3>
+        <p>GNS Vault Chrome extension sees the challenge, signs with the user's Ed25519 private key, and returns the public key + signature.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <h3>Server verifies via Vault API</h3>
+        <p>The website sends the public key to vault.gcrumbs.com/v1/verify which returns trust score, breadcrumbs, and badge tier.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="code-section" id="integrate">
+    <h2>Add to your website</h2>
+    <p class="desc">10 lines. No OAuth, no cookies, no third-party tracking.</p>
     <div class="code-block">
-      <span class="comment">&lt;!-- 1. Include the SDK --&gt;</span><br>
-      &lt;<span class="keyword">script</span> <span class="func">src</span>=<span class="string">"https://auth.globecrumbs.com/v1/gns-auth.js"</span>&gt;&lt;/<span class="keyword">script</span>&gt;<br><br>
-      <span class="comment">&lt;!-- 2. Add a button container --&gt;</span><br>
-      &lt;<span class="keyword">div</span> <span class="func">id</span>=<span class="string">"gns-login"</span>&gt;&lt;/<span class="keyword">div</span>&gt;<br><br>
-      <span class="comment">&lt;!-- 3. Initialize --&gt;</span><br>
-      &lt;<span class="keyword">script</span>&gt;<br>
-      &nbsp;&nbsp;<span class="func">GNSAuth</span>.<span class="func">init</span>({<br>
-      &nbsp;&nbsp;&nbsp;&nbsp;<span class="func">onAuth</span>: (<span class="func">res</span>) =&gt; {<br>
-      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// res.publicKey, res.signature, res.trustScore</span><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Send to your server to verify</span><br>
-      &nbsp;&nbsp;&nbsp;&nbsp;}<br>
-      &nbsp;&nbsp;});<br>
-      &nbsp;&nbsp;<span class="func">GNSAuth</span>.<span class="func">renderButton</span>(<span class="string">'#gns-login'</span>);<br>
-      &lt;/<span class="keyword">script</span>&gt;
-    </div>
-
-    <!-- Event Log -->
-    <h3 style="margin-top:32px;margin-bottom:12px;">Auth Event Log</h3>
-    <div id="log" class="log">
-      <div class="log-entry">
-        <span class="log-time">[init]</span> Demo store loaded. Detecting GNS Vault extension...
+      <div class="code-header">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        <span class="code-lang">index.html</span>
       </div>
-    </div>
+      <pre><span class="comment">&lt;!-- 1. Add the button --&gt;</span>
+<span class="tag">&lt;button</span> <span class="attr">onclick</span>=<span class="str">"signInWithGNS()"</span><span class="tag">&gt;</span>Sign in with GNS<span class="tag">&lt;/button&gt;</span>
 
-  </div>
-
-  <!-- GNS Auth SDK (in production, this is from CDN) -->
-  <script type="module">
-    // Simulated GNS Auth SDK (in production, loaded from auth.globecrumbs.com)
-    // For this demo, we wire up the button manually
-
-    const log = document.getElementById('log');
-    function addLog(msg, type = '') {
-      const time = new Date().toLocaleTimeString();
-      const entry = document.createElement('div');
-      entry.className = 'log-entry';
-      entry.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-${type}">${msg}</span>`;
-      log.appendChild(entry);
-      log.scrollTop = log.scrollHeight;
+<span class="tag">&lt;script&gt;</span>
+<span class="kw">async function</span> <span class="fn">signInWithGNS</span>() {
+  <span class="comment">// 2. Create + dispatch challenge</span>
+  <span class="fn">dispatchEvent</span>(<span class="kw">new</span> <span class="fn">CustomEvent</span>(<span class="str">'gns-auth-request'</span>, {
+    detail: {
+      nonce: <span class="fn">crypto</span>.randomUUID(),
+      origin: location.origin,
+      timestamp: <span class="kw">new</span> <span class="fn">Date</span>().toISOString(),
+      expiresIn: <span class="num">300</span>
     }
+  }));
+}
 
-    // Render GNS Auth button
-    const container = document.getElementById('gns-login');
-    const btn = document.createElement('button');
-    Object.assign(btn.style, {
-      width: '280px',
-      height: '48px',
-      borderRadius: '8px',
-      fontSize: '15px',
-      fontFamily: 'inherit',
-      fontWeight: '500',
-      cursor: 'pointer',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: '10px',
-      background: '#1A3C5E',
-      color: 'white',
-      border: 'none',
-      transition: 'all 0.2s',
-    });
-    btn.innerHTML = '<span style="width:12px;height:12px;border-radius:50%;background:#1E8449;display:inline-block;"></span> Sign in with GNS <span style="font-size:10px;opacity:0.7;">✓ Human</span>';
-    btn.onmouseenter = () => { btn.style.background = '#15324e'; btn.style.transform = 'translateY(-1px)'; };
-    btn.onmouseleave = () => { btn.style.background = '#1A3C5E'; btn.style.transform = 'none'; };
+<span class="comment">// 3. Listen for signed response from extension</span>
+<span class="fn">addEventListener</span>(<span class="str">'gns-auth-response'</span>, <span class="kw">async</span> (e) => {
+  <span class="kw">const</span> { publicKey, signature } = e.detail;
 
-    btn.onclick = () => {
-      addLog('GNS Auth challenge sent to extension...', '');
+  <span class="comment">// 4. Verify identity via Vault API</span>
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">'https://vault.gcrumbs.com/v1/verify'</span>, {
+    method: <span class="str">'POST'</span>,
+    headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span> },
+    body: <span class="fn">JSON</span>.stringify({ public_key: publicKey })
+  });
+  <span class="kw">const</span> id = <span class="kw">await</span> res.<span class="fn">json</span>();
+  console.<span class="fn">log</span>(id.human, id.badge_tier);
+});
+<span class="tag">&lt;/script&gt;</span></pre>
+    </div>
+  </section>
 
-      // Simulate extension response (in production, this is real)
+  <footer>
+    <div class="footer-row">
+      <a class="footer-link" href="https://github.com/GNS-Foundation/gns-vault">GitHub</a>
+      <a class="footer-link" href="https://vault.gcrumbs.com/v1/health">API Health</a>
+      <a class="footer-link" href="https://globecrumbs.com">Globe Crumbs</a>
+    </div>
+    <p class="footer-note">Identity = Public Key &middot; Built on <a href="https://globecrumbs.com">GNS Protocol</a></p>
+  </footer>
+</div>
+
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon"></span>
+  <span id="toast-text"></span>
+</div>
+
+<script>
+  // ============================================================
+  // CONFIG
+  // ============================================================
+  const VAULT_API = 'https://vault.gcrumbs.com';
+  const API_KEY = 'gns_test_key_development';
+
+  let extensionDetected = false;
+  let authInProgress = false;
+
+  const BADGES = {
+    unverified: { icon: '\u2b1c', name: 'Unverified', desc: 'No trajectory data collected' },
+    seedling:   { icon: '\ud83c\udf31', name: 'Seedling',   desc: '1-49 breadcrumbs' },
+    explorer:   { icon: '\ud83e\udded', name: 'Explorer',   desc: '50-249 breadcrumbs' },
+    navigator:  { icon: '\ud83d\uddfa\ufe0f', name: 'Navigator',  desc: '250-999 breadcrumbs' },
+    trailblazer:{ icon: '\ud83c\udfd4\ufe0f', name: 'Trailblazer', desc: '1000+ breadcrumbs' },
+  };
+
+  // ============================================================
+  // EXTENSION DETECTION (both protocols)
+  // ============================================================
+
+  // Method 1: Check DOM attribute set by content script
+  function checkDomAttribute() {
+    return document.documentElement.hasAttribute('data-gns-vault-extension');
+  }
+
+  // Method 2: Listen for CustomEvent announcement
+  window.addEventListener('gns-extension-present', (e) => {
+    onExtensionDetected(e.detail?.version || 'unknown');
+  });
+
+  // Method 3: Listen for postMessage announcement
+  window.addEventListener('message', (e) => {
+    if (e.source === window && e.data?.type === 'GNS_EXTENSION_PRESENT') {
+      onExtensionDetected(e.data.version || 'unknown');
+    }
+  });
+
+  function onExtensionDetected(version) {
+    if (extensionDetected) return;
+    extensionDetected = true;
+
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+    dot.className = 'dot connected';
+    text.textContent = 'GNS Vault v' + version + ' connected';
+
+    document.getElementById('ext-detected').classList.add('visible');
+    document.getElementById('ext-not-found').classList.remove('visible');
+
+    showToast('\u2705', 'GNS Vault extension detected!');
+  }
+
+  // Check after a delay — if not detected, show warning
+  setTimeout(() => {
+    if (!extensionDetected) {
+      // Try DOM attribute check (works if content script ran)
+      if (checkDomAttribute()) {
+        onExtensionDetected('0.2.0');
+        return;
+      }
+
+      // Also try probing via CustomEvent
+      window.dispatchEvent(new CustomEvent('gns-extension-detect'));
+
+      // Final timeout
       setTimeout(() => {
-        const mockResponse = {
-          publicKey: 'a1b2c3d4e5f6789012345678abcdef0123456789abcdef0123456789abcdef01',
-          signature: 'f'.repeat(128),
-          nonce: Math.random().toString(36).substring(2),
-          trustScore: 87.3,
-          badgeTier: 'gold',
-          handle: '@demo_user',
-          timestamp: new Date().toISOString(),
-        };
+        if (!extensionDetected) {
+          document.getElementById('status-text').textContent = 'extension not detected';
+          document.getElementById('ext-not-found').classList.add('visible');
+        }
+      }, 1500);
+    }
+  }, 1500);
 
-        addLog('✓ GNS Auth response received', 'ok');
-        addLog(`  Public Key: ${mockResponse.publicKey.substring(0, 16)}...`, '');
-        addLog(`  Trust Score: ${mockResponse.trustScore}/100`, 'ok');
-        addLog(`  Badge: ${mockResponse.badgeTier}`, 'ok');
-        addLog(`  Handle: ${mockResponse.handle}`, '');
-        addLog('  Signature: verified ✓', 'ok');
+  // ============================================================
+  // AUTH FLOW
+  // ============================================================
 
-        showUser(mockResponse);
-      }, 800);
+  function startAuth() {
+    if (authInProgress) return;
+    authInProgress = true;
+
+    const btn = document.getElementById('gns-login-btn');
+    btn.classList.add('loading');
+    btn.innerHTML = '<span class="icon">G</span> Waiting for extension...';
+
+    // Build cryptographic challenge
+    const challenge = {
+      nonce: crypto.randomUUID(),
+      origin: window.location.origin,
+      timestamp: new Date().toISOString(),
+      expiresIn: 300,
     };
 
-    container.appendChild(btn);
-    addLog('GNS Auth button rendered', 'ok');
+    // Dispatch via CustomEvent (content script auth-bridge listens)
+    window.dispatchEvent(new CustomEvent('gns-auth-request', {
+      detail: challenge,
+    }));
 
-    // Check for extension (simulated)
+    showToast('\ud83d\udd10', 'Challenge sent to GNS Vault extension...');
+
+    // Timeout — if no response
     setTimeout(() => {
-      addLog('Extension detection: checking window.postMessage...', '');
-      // In real usage, GNSAuth.init() handles this
-      addLog('Demo mode: extension simulation active', 'ok');
+      if (authInProgress) {
+        authInProgress = false;
+        btn.classList.remove('loading');
+        btn.innerHTML = '<span class="icon">G</span> Sign in with GNS';
+
+        if (!extensionDetected) {
+          document.getElementById('ext-not-found').classList.add('visible');
+          showToast('\u26a0\ufe0f', 'Extension not responding. Try demo mode below.');
+        } else {
+          document.getElementById('ext-vault-locked').classList.add('visible');
+          showToast('\ud83d\udd12', 'No response. Is your vault unlocked?');
+        }
+      }
+    }, 10000);
+  }
+
+  // ============================================================
+  // LISTEN FOR AUTH RESPONSE (both protocols)
+  // ============================================================
+
+  // Protocol A: CustomEvent
+  window.addEventListener('gns-auth-response', (event) => {
+    handleAuthResponse(event.detail);
+  });
+
+  // Protocol B: postMessage
+  window.addEventListener('message', (event) => {
+    if (event.source === window && event.data?.type === 'GNS_AUTH_RESPONSE') {
+      // Avoid double-processing (auth-bridge fires both)
+      // CustomEvent fires first, postMessage is backup
+      if (!authInProgress) return;
+      handleAuthResponse(event.data.response || event.data.error);
+    }
+  });
+
+  async function handleAuthResponse(response) {
+    if (!authInProgress) return;
+    authInProgress = false;
+
+    // Check for error
+    if (response?.error) {
+      const btn = document.getElementById('gns-login-btn');
+      btn.classList.remove('loading');
+      btn.innerHTML = '<span class="icon">G</span> Sign in with GNS';
+
+      if (response.error.code === 'SIGN_FAILED') {
+        document.getElementById('ext-vault-locked').classList.add('visible');
+        showToast('\ud83d\udd12', response.error.message);
+      } else {
+        showToast('\u274c', response.error.message || 'Auth failed');
+      }
+      return;
+    }
+
+    // Got signed response — verify via vault.gcrumbs.com
+    if (response?.publicKey) {
+      showToast('\u2705', 'Signature received! Verifying identity...');
+      await verifyAndDisplay(response.publicKey, response.handle);
+    }
+  }
+
+  // ============================================================
+  // DEMO MODE — Uses real API with Camilo's known key
+  // ============================================================
+
+  async function runDemoMode() {
+    showToast('\ud83c\udfad', 'Demo mode: querying real identity...');
+    const demoKey = '0042d1dccf036d10f7699892ea3fe621cd7c76218ad89fddab51adad2c90b758';
+    await verifyAndDisplay(demoKey, 'camilo');
+  }
+
+  // ============================================================
+  // VERIFY AND DISPLAY
+  // ============================================================
+
+  async function verifyAndDisplay(publicKey, handle) {
+    try {
+      const res = await fetch(VAULT_API + '/v1/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-API-Key': API_KEY },
+        body: JSON.stringify({ public_key: publicKey }),
+      });
+      const data = await res.json();
+
+      // Try identity endpoint for handle/display name
+      let identity = null;
+      try {
+        const idRes = await fetch(VAULT_API + '/v1/identity/' + publicKey);
+        if (idRes.ok) identity = await idRes.json();
+      } catch (e) {}
+
+      const displayHandle = identity?.handle || handle || null;
+      const badge = BADGES[data.badge_tier] || BADGES.unverified;
+
+      document.getElementById('id-avatar').textContent = badge.icon;
+      document.getElementById('id-name').textContent = identity?.display_name || (displayHandle ? '@' + displayHandle : 'GNS Identity');
+      document.getElementById('id-handle').textContent = displayHandle ? '@' + displayHandle : publicKey.substring(0, 16) + '...';
+      document.getElementById('id-pubkey').textContent = publicKey.substring(0, 8) + '...' + publicKey.substring(56);
+
+      const badgeEl = document.getElementById('id-badge');
+      if (data.human) {
+        badgeEl.style.background = 'rgba(16,185,129,0.15)';
+        badgeEl.style.color = '#10b981';
+        document.getElementById('id-badge-text').textContent = 'Verified Human';
+        badgeEl.querySelector('.check').style.background = '#10b981';
+      } else {
+        badgeEl.style.background = 'rgba(245,158,11,0.15)';
+        badgeEl.style.color = '#f59e0b';
+        document.getElementById('id-badge-text').textContent = 'Unverified';
+        badgeEl.querySelector('.check').style.background = '#f59e0b';
+      }
+
+      document.getElementById('badge-icon').textContent = badge.icon;
+      document.getElementById('badge-name').textContent = badge.name;
+      document.getElementById('badge-desc').textContent = badge.desc;
+
+      document.getElementById('stat-trust').textContent = data.trust_score + '%';
+      document.getElementById('stat-crumbs').textContent = data.breadcrumbs >= 1000 ? (data.breadcrumbs / 1000).toFixed(1) + 'k' : data.breadcrumbs;
+      document.getElementById('stat-age').textContent = data.identity_age_days;
+      document.getElementById('stat-human').textContent = data.human ? 'YES' : 'NO';
+
+      document.getElementById('api-status').textContent = res.status + ' OK';
+      document.getElementById('api-json').innerHTML = syntaxHighlight(data);
+
+      document.getElementById('auth-prompt').style.display = 'none';
+      document.getElementById('auth-result').classList.add('visible');
+
+      const btn = document.getElementById('gns-login-btn');
+      btn.classList.remove('loading');
+      btn.innerHTML = '<span class="icon">G</span> Sign in with GNS';
+
+      showToast(badge.icon, 'Welcome! ' + badge.name + ' - Trust: ' + data.trust_score + '%');
+
+    } catch (err) {
+      showToast('\u274c', 'Verification failed: ' + err.message);
+      const btn = document.getElementById('gns-login-btn');
+      btn.classList.remove('loading');
+      btn.innerHTML = '<span class="icon">G</span> Sign in with GNS';
+      authInProgress = false;
+    }
+  }
+
+  // ============================================================
+  // SIGN OUT
+  // ============================================================
+
+  function signOut() {
+    document.getElementById('auth-prompt').style.display = 'block';
+    document.getElementById('auth-result').classList.remove('visible');
+    document.querySelectorAll('.ext-notice').forEach(n => n.classList.remove('visible'));
+    extensionDetected = false;
+    authInProgress = false;
+
+    // Re-detect extension
+    setTimeout(() => {
+      if (checkDomAttribute()) onExtensionDetected('0.2.0');
+      window.dispatchEvent(new CustomEvent('gns-extension-detect'));
     }, 300);
 
-    function showUser(response) {
-      const card = document.getElementById('user-card');
-      card.classList.add('visible');
-      document.getElementById('user-key').textContent = response.publicKey;
-      document.getElementById('user-badge').textContent =
-        `🟨 ${response.badgeTier.charAt(0).toUpperCase() + response.badgeTier.slice(1)}`;
-      document.getElementById('user-handle').textContent = response.handle || '';
-      document.getElementById('user-score').textContent = `${response.trustScore}/100`;
-      document.getElementById('trust-fill').style.width = `${response.trustScore}%`;
+    showToast('\ud83d\udc4b', 'Signed out');
+  }
 
-      // Hide auth section
-      document.getElementById('auth-section').style.display = 'none';
-    }
+  // ============================================================
+  // UTILITIES
+  // ============================================================
 
-    // Legacy login
-    window.legacyLogin = (e) => {
-      e.preventDefault();
-      addLog('Legacy password login submitted', '');
-      addLog('⚠ Password transmitted to server (less secure)', 'err');
-      addLog('✓ Logged in via password', '');
-    };
-  </script>
+  function syntaxHighlight(json) {
+    return JSON.stringify(json, null, 2).replace(
+      /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
+      (match) => {
+        let cls = 'num';
+        if (/^"/.test(match)) {
+          if (/:$/.test(match)) {
+            cls = 'key';
+            match = match.replace(/"/g, '').replace(':', '');
+            return '<span class="' + cls + '">"' + match + '"</span>:';
+          } else { cls = 'str'; }
+        } else if (/true/.test(match)) { cls = 'bool-true'; }
+        else if (/false/.test(match)) { cls = 'bool-false'; }
+        return '<span class="' + cls + '">' + match + '</span>';
+      }
+    );
+  }
+
+  function showToast(icon, text) {
+    const toast = document.getElementById('toast');
+    document.getElementById('toast-icon').textContent = icon;
+    document.getElementById('toast-text').textContent = text;
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 4000);
+  }
+</script>
+
 </body>
 </html>
