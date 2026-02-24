@@ -38,6 +38,13 @@ import type {
   AutofillData,
 } from '../utils/messages';
 
+import {
+  initDnsVerification,
+  handleDnsGetVerification,
+  handleDnsVerifyDomain,
+  handleDnsClearCache,
+} from './dns-verify';
+
 // ============================================================
 // STATE
 // ============================================================
@@ -72,6 +79,9 @@ chrome.runtime.onInstalled.addListener(async (details) => {
 
 // Load identity on startup
 loadIdentity();
+
+// Initialize DNS-TXT identity verification on page navigation
+initDnsVerification();
 
 // ============================================================
 // MESSAGE ROUTING
@@ -147,6 +157,14 @@ async function handleMessage(
     case 'GNS_AUTH_RESPOND':
       return signGnsAuth(message.challenge);
 
+    // === DNS Identity Verification ===
+    case 'DNS_GET_VERIFICATION':
+      return handleDnsGetVerification((message as any).tabId);
+    case 'DNS_VERIFY_DOMAIN':
+      return handleDnsVerifyDomain((message as any).domain);
+    case 'DNS_CLEAR_CACHE':
+      return handleDnsClearCache();
+
     default:
       return { success: false, error: `Unknown message type: ${(message as { type: string }).type}` };
   }
@@ -168,10 +186,10 @@ async function getVaultStatus(): Promise<MessageResponse<VaultStatusData>> {
       entryCount: vault?.size ?? 0,
       identity: identity
         ? {
-            publicKey: identity.publicKey,
-            handle: identity.handle,
-            createdAt: identity.createdAt,
-          }
+          publicKey: identity.publicKey,
+          handle: identity.handle,
+          createdAt: identity.createdAt,
+        }
         : null,
     },
   };

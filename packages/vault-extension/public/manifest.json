@@ -7,13 +7,17 @@
     "storage",
     "activeTab",
     "alarms",
-    "notifications"
+    "notifications",
+    "webNavigation"
   ],
   "optional_permissions": [
     "clipboardWrite"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "<all_urls>",
+    "https://vault.gcrumbs.com/*",
+    "https://dns.google/*",
+    "https://cloudflare-dns.com/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -21,9 +25,15 @@
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["content.js"],
-      "css": ["content.css"],
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "content.css"
+      ],
       "run_at": "document_idle"
     }
   ],
@@ -44,8 +54,12 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["gns-inject.js"],
-      "matches": ["<all_urls>"]
+      "resources": [
+        "gns-inject.js"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
     }
   ],
   "content_security_policy": {

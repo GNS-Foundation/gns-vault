@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { sendMessage, copyToClipboard, truncateKey, formatDate } from '../helpers';
+import { DnsSiteCard } from './DnsSiteCard';
 
 interface IdentityData {
   publicKey: string;
@@ -61,6 +62,9 @@ export function IdentityTab() {
 
   return (
     <div>
+      {/* Current Site Identity */}
+      <DnsSiteCard />
+
       {/* Identity Card */}
       <div className="identity-card">
         <div className="identity-label">YOUR GNS IDENTITY</div>

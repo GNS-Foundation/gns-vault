@@ -31,7 +31,10 @@ export type PopupMessage =
   | { type: 'IDENTITY_GET' }
   | { type: 'IDENTITY_GET_TRUST_SCORE' }
   | { type: 'IDENTITY_CLAIM_HANDLE'; handle: string }
-  | { type: 'AUTH_SIGN_CHALLENGE'; challenge: AuthChallengeData };
+  | { type: 'AUTH_SIGN_CHALLENGE'; challenge: AuthChallengeData }
+  | { type: 'DNS_GET_VERIFICATION'; tabId: number }
+  | { type: 'DNS_VERIFY_DOMAIN'; domain: string }
+  | { type: 'DNS_CLEAR_CACHE' };
 
 // ============================================================
 // CONTENT SCRIPT → BACKGROUND MESSAGES

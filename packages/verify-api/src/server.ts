@@ -138,7 +138,7 @@ async function fetchIdentity(publicKey: string): Promise<BackendIdentity | null>
     }
 
     const json = await res.json() as { success: boolean; data?: BackendIdentity };
-    
+
     if (!json.success || !json.data) return null;
 
     // Cache it
@@ -150,7 +150,7 @@ async function fetchIdentity(publicKey: string): Promise<BackendIdentity | null>
     return json.data;
   } catch (err) {
     console.error(`Backend fetch error for ${publicKey.substring(0, 16)}...:`, (err as Error).message);
-    
+
     // Return stale cache if backend is down
     if (cached) {
       console.log('  ↳ Returning stale cached data');
@@ -463,11 +463,14 @@ function hexToBytes(hex: string): Uint8Array {
 // EXPORT & START
 // ============================================================
 
+app.route('/v1/dns', dnsVerifyRoutes);
+
 export default app;
 
 const port = Number(process.env.PORT) || 3847;
 
 import { serve } from '@hono/node-server';
+import { dnsVerifyRoutes } from './dns-verify';
 
 serve({ fetch: app.fetch, port }, () => {
   console.log(`\n  🌐 GNS Verify API v0.2.0 running on http://localhost:${port}`);
