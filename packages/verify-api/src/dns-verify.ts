@@ -79,7 +79,7 @@ export interface DnsVerificationResult {
 const GNS_BACKEND_URL = process.env.GNS_BACKEND_URL
   || 'https://gns-browser-production.up.railway.app';
 
-const DOH_GOOGLE     = 'https://dns.google/resolve';
+const DOH_GOOGLE = 'https://dns.google/resolve';
 const DOH_CLOUDFLARE = 'https://cloudflare-dns.com/dns-query';
 
 const DNS_CACHE_TTL = 5 * 60 * 1000;
@@ -277,20 +277,20 @@ async function relayCheck(pk: string): Promise<RelayCheckResult> {
   }
 }
 
-async function namespaceCheck(_pk: string, domain: string): Promise<{ match: boolean; namespace?: string }> {
+async function namespaceCheck(_pk: string, domain: string): Promise<{ match: boolean; namespace: string | undefined }> {
   try {
     const res = await fetch(`${GNS_BACKEND_URL}/org/domain/${domain}`, {
       headers: { 'Accept': 'application/json' },
       signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) return { match: false };
+    if (!res.ok) return { match: false, namespace: undefined };
 
     const json = await res.json() as { success: boolean; data?: any };
-    if (!json.success || !json.data) return { match: false };
+    if (!json.success || !json.data) return { match: false, namespace: undefined };
 
     return { match: true, namespace: json.data.namespace };
   } catch {
-    return { match: false };
+    return { match: false, namespace: undefined };
   }
 }
 
@@ -306,8 +306,8 @@ async function verifyDomain(domain: string): Promise<DnsVerificationResult> {
   const clean = domain
     .replace(/^https?:\/\//, '')
     .replace(/^www\./, '')
-    .split('/')[0]
-    .split(':')[0]
+    .split('/')[0]!
+    .split(':')[0]!
     .toLowerCase();
 
   const cached = getCached(clean);
