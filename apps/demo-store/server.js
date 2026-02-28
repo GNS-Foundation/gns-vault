@@ -40,13 +40,18 @@ app.get('/health', (req, res) => {
 });
 
 // Serve .well-known with CORS for AIP discovery
-app.use('/.well-known', express.static(path.join(__dirname, 'public', '.well-known'), {
-  setHeaders: (res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-  }
-}));
+app.get('/.well-known/gns-aip.json', (req, res) => {
+  const filePath = path.join(__dirname, 'public', '.well-known', 'gns-aip.json');
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.sendFile(filePath, (err) => {
+    if (err) {
+      console.error('[.well-known] File not found:', filePath);
+      res.status(404).json({ error: 'gns-aip.json not found' });
+    }
+  });
+});
 
 // Serve static files from current directory
 app.use(express.static(path.join(__dirname), {
