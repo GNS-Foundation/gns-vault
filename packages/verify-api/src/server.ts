@@ -114,7 +114,7 @@ interface CachedIdentity {
   fetchedAt: number;
 }
 
-const identityCache = new Map<string, CachedIdentity>();
+export const identityCache = new Map<string, CachedIdentity>();
 
 /** Fetch identity from gns-backend (with short cache) */
 async function fetchIdentity(publicKey: string): Promise<BackendIdentity | null> {
@@ -180,7 +180,7 @@ function isHumanVerified(trustScore: number, breadcrumbs: number): boolean {
 // API KEY STORE
 // ============================================================
 
-const apiKeyStore = new Map<string, {
+export const apiKeyStore = new Map<string, {
   appName: string;
   tier: 'starter' | 'growth' | 'scale' | 'enterprise';
   monthlyLimit: number;
@@ -474,9 +474,11 @@ import { serve } from '@hono/node-server';
 import { dnsVerifyRoutes } from './dns-verify.js';
 import { aipVerifyRoutes } from './aip-verify.js';
 
-serve({ fetch: app.fetch, port }, () => {
-  console.log(`\n  🌐 GNS Verify API v0.2.0 running on http://localhost:${port}`);
-  console.log(`  📍 Health check: http://localhost:${port}/v1/health`);
-  console.log(`  🔗 Backend: ${GNS_BACKEND_URL}`);
-  console.log(`  🔑 Test API key: gns_test_key_development\n`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  serve({ fetch: app.fetch, port }, () => {
+    console.log(`\n  🌐 GNS Verify API v0.2.0 running on http://localhost:${port}`);
+    console.log(`  📍 Health check: http://localhost:${port}/v1/health`);
+    console.log(`  🔗 Backend: ${GNS_BACKEND_URL}`);
+    console.log(`  🔑 Test API key: gns_test_key_development\n`);
+  });
+}

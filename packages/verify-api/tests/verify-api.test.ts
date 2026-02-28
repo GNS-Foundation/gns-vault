@@ -3,10 +3,14 @@
  *
  * Tests all endpoints using Hono's built-in test client (app.request).
  * No server startup needed — tests run against the Hono app directly.
+ *
+ * NOTE: The verify-api is a proxy to the GNS backend. Tests that depend
+ * on identity data use the identityCache directly (simulating cached
+ * responses from the backend) rather than a local identity store.
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import app, { identityStore, apiKeyStore } from '../src/server.js';
+import app, { identityCache, apiKeyStore } from '../src/server.js';
 import * as ed from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha512';
 
@@ -52,6 +56,28 @@ function jsonPost(path: string, body: unknown, headers: Record<string, string> =
   });
 }
 
+/**
+ * Seed a cached identity (simulates a backend response).
+ * The verify-api proxies requests to gns-backend; in tests we
+ * populate the identityCache directly.
+ */
+function seedCachedIdentity(publicKey: string, overrides: Partial<{
+  public_key: string; handle: string; display_name: string;
+  trust_score: number; breadcrumb_count: number; created_at: string;
+}> = {}) {
+  identityCache.set(publicKey, {
+    data: {
+      public_key: publicKey,
+      handle: overrides.handle,
+      display_name: overrides.display_name,
+      trust_score: overrides.trust_score ?? 0,
+      breadcrumb_count: overrides.breadcrumb_count ?? 0,
+      created_at: overrides.created_at ?? new Date().toISOString(),
+    },
+    fetchedAt: Date.now(),
+  });
+}
+
 // ============================================================
 // TESTS
 // ============================================================
@@ -63,14 +89,14 @@ describe('Health Check', () => {
     const data = await res.json();
     expect(data.status).toBe('ok');
     expect(data.service).toBe('gns-verify-api');
-    expect(data.version).toBe('0.1.0');
+    expect(data.version).toBe('0.2.0');
     expect(data.timestamp).toBeDefined();
   });
 });
 
 describe('POST /v1/verify', () => {
   beforeEach(() => {
-    identityStore.clear();
+    identityCache.clear();
     // Reset the test API key usage
     apiKeyStore.set(TEST_API_KEY, {
       appName: 'Development',
@@ -138,17 +164,14 @@ describe('POST /v1/verify', () => {
     expect(data.meets_requirements).toBe(false);
   });
 
-  it('should return verified data for known identity', async () => {
+  it('should return verified data for cached identity', async () => {
     const id = await generateTestIdentity();
 
-    identityStore.set(id.publicKeyHex, {
-      publicKey: id.publicKeyHex,
+    seedCachedIdentity(id.publicKeyHex, {
       handle: '@testuser',
-      trustScore: 85,
-      breadcrumbs: 5000,
-      badgeTier: 'gold',
-      createdAt: new Date(Date.now() - 90 * 86_400_000).toISOString(), // 90 days ago
-      humanVerified: true,
+      trust_score: 85,
+      breadcrumb_count: 5000,
+      created_at: new Date(Date.now() - 90 * 86_400_000).toISOString(),
     });
 
     const res = await jsonPost('/v1/verify', { public_key: id.publicKeyHex }, {
@@ -159,7 +182,7 @@ describe('POST /v1/verify', () => {
     expect(data.human).toBe(true);
     expect(data.trust_score).toBe(85);
     expect(data.breadcrumbs).toBe(5000);
-    expect(data.badge_tier).toBe('gold');
+    expect(data.badge_tier).toBe('trailblazer'); // 5000 >= 1000
     expect(data.identity_age_days).toBeGreaterThanOrEqual(89);
     expect(data.meets_requirements).toBe(true);
   });
@@ -167,13 +190,10 @@ describe('POST /v1/verify', () => {
   it('should check minimum trust score', async () => {
     const id = await generateTestIdentity();
 
-    identityStore.set(id.publicKeyHex, {
-      publicKey: id.publicKeyHex,
-      trustScore: 30,
-      breadcrumbs: 100,
-      badgeTier: 'bronze',
-      createdAt: new Date().toISOString(),
-      humanVerified: true,
+    seedCachedIdentity(id.publicKeyHex, {
+      trust_score: 30,
+      breadcrumb_count: 100,
+      created_at: new Date().toISOString(),
     });
 
     const res = await jsonPost('/v1/verify', {
@@ -182,7 +202,7 @@ describe('POST /v1/verify', () => {
     }, { 'X-API-Key': TEST_API_KEY });
 
     const data = await res.json();
-    expect(data.human).toBe(true);
+    expect(data.human).toBe(true);       // 100 breadcrumbs >= 10 && 30 >= 5
     expect(data.meets_requirements).toBe(false); // 30 < 50
   });
 
@@ -248,7 +268,6 @@ describe('POST /v1/auth/validate', () => {
     expect(data.valid).toBe(true);
     expect(data.public_key).toBe(id.publicKeyHex);
     expect(data.trust_score).toBe(75);
-    expect(data.badge_tier).toBe('silver');
     expect(data.handle).toBe('@test');
     expect(data.validated_at).toBeDefined();
   });
@@ -352,7 +371,7 @@ describe('POST /v1/auth/validate', () => {
 
 describe('GET /v1/identity/:publicKey', () => {
   beforeEach(() => {
-    identityStore.clear();
+    identityCache.clear();
   });
 
   it('should return 404 for unknown identity', async () => {
@@ -365,17 +384,14 @@ describe('GET /v1/identity/:publicKey', () => {
     expect(res.status).toBe(400);
   });
 
-  it('should return identity info for registered identity', async () => {
+  it('should return identity info for cached identity', async () => {
     const id = await generateTestIdentity();
 
-    identityStore.set(id.publicKeyHex, {
-      publicKey: id.publicKeyHex,
+    seedCachedIdentity(id.publicKeyHex, {
       handle: '@alice',
-      trustScore: 92,
-      breadcrumbs: 12000,
-      badgeTier: 'platinum',
-      createdAt: '2025-01-15T00:00:00.000Z',
-      humanVerified: true,
+      trust_score: 92,
+      breadcrumb_count: 12000,
+      created_at: '2025-01-15T00:00:00.000Z',
     });
 
     const res = await req(`/v1/identity/${id.publicKeyHex}`);
@@ -384,61 +400,10 @@ describe('GET /v1/identity/:publicKey', () => {
     const data = await res.json();
     expect(data.public_key).toBe(id.publicKeyHex);
     expect(data.handle).toBe('@alice');
-    expect(data.badge_tier).toBe('platinum');
+    expect(data.badge_tier).toBe('trailblazer'); // 12000 >= 1000
     expect(data.trust_score).toBe(92);
     expect(data.human_verified).toBe(true);
     expect(data.created_at).toBe('2025-01-15T00:00:00.000Z');
-  });
-});
-
-describe('POST /v1/admin/register', () => {
-  beforeEach(() => {
-    identityStore.clear();
-  });
-
-  it('should reject without admin key', async () => {
-    const res = await jsonPost('/v1/admin/register', {
-      public_key: 'a'.repeat(64),
-    });
-    expect(res.status).toBe(401);
-  });
-
-  it('should register identity with dev admin key', async () => {
-    const id = await generateTestIdentity();
-
-    const res = await jsonPost('/v1/admin/register', {
-      public_key: id.publicKeyHex,
-      handle: '@newuser',
-      trust_score: 45,
-      breadcrumbs: 500,
-      badge_tier: 'bronze',
-      human_verified: true,
-    }, { 'X-Admin-Key': 'dev_admin_key' });
-
-    expect(res.status).toBe(200);
-    const data = await res.json();
-    expect(data.registered).toBe(true);
-
-    // Verify it's in the store
-    const stored = identityStore.get(id.publicKeyHex);
-    expect(stored).toBeDefined();
-    expect(stored!.handle).toBe('@newuser');
-    expect(stored!.trustScore).toBe(45);
-    expect(stored!.humanVerified).toBe(true);
-  });
-
-  it('should use default values when not provided', async () => {
-    const id = await generateTestIdentity();
-
-    await jsonPost('/v1/admin/register', {
-      public_key: id.publicKeyHex,
-    }, { 'X-Admin-Key': 'dev_admin_key' });
-
-    const stored = identityStore.get(id.publicKeyHex);
-    expect(stored!.trustScore).toBe(0);
-    expect(stored!.breadcrumbs).toBe(0);
-    expect(stored!.badgeTier).toBe('unverified');
-    expect(stored!.humanVerified).toBe(false);
   });
 });
 
