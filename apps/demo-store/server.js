@@ -49,6 +49,15 @@ app.use(express.static(path.join(__dirname), {
   },
 }));
 
+// Serve .well-known with CORS for AIP discovery
+app.use('/.well-known', express.static(path.join(__dirname, 'public', '.well-known'), {
+  setHeaders: (res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  }
+}));
+
 // SPA fallback — serve index.html for all routes
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
