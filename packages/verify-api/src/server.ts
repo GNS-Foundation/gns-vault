@@ -464,6 +464,7 @@ function hexToBytes(hex: string): Uint8Array {
 // ============================================================
 
 app.route('/v1/dns', dnsVerifyRoutes);
+app.route('/v1/aip', aipVerifyRoutes);
 
 export default app;
 
@@ -471,6 +472,7 @@ const port = Number(process.env.PORT) || 3847;
 
 import { serve } from '@hono/node-server';
 import { dnsVerifyRoutes } from './dns-verify.js';
+import { aipVerifyRoutes } from './aip-verify.js';
 
 serve({ fetch: app.fetch, port }, () => {
   console.log(`\n  🌐 GNS Verify API v0.2.0 running on http://localhost:${port}`);

@@ -45,6 +45,15 @@ import {
   handleDnsClearCache,
 } from './dns-verify';
 
+import {
+  initAipVerification,
+  handleAipGetAgents,
+  handleAipVerifyChain,
+  handleAipGetJurisdiction,
+  handleAipAgentsDetected,
+  handleAipClearCache,
+} from './aip-verify';
+
 // ============================================================
 // STATE
 // ============================================================
@@ -82,6 +91,9 @@ loadIdentity();
 
 // Initialize DNS-TXT identity verification on page navigation
 initDnsVerification();
+
+// Initialize AIP (AI Agent Identity Protocol) verification on page navigation
+initAipVerification();
 
 // ============================================================
 // MESSAGE ROUTING
@@ -164,6 +176,18 @@ async function handleMessage(
       return handleDnsVerifyDomain((message as any).domain);
     case 'DNS_CLEAR_CACHE':
       return handleDnsClearCache();
+
+    // === AIP Agent Identity Verification ===
+    case 'AIP_GET_AGENTS':
+      return handleAipGetAgents((message as any).tabId);
+    case 'AIP_VERIFY_CHAIN':
+      return handleAipVerifyChain((message as any).domain);
+    case 'AIP_GET_JURISDICTION':
+      return handleAipGetJurisdiction((message as any).domain);
+    case 'AIP_AGENTS_DETECTED':
+      return handleAipAgentsDetected((message as any).tabId, (message as any).agents);
+    case 'AIP_CLEAR_CACHE':
+      return handleAipClearCache();
 
     default:
       return { success: false, error: `Unknown message type: ${(message as { type: string }).type}` };

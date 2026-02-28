@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "domain": "demo.gcrumbs.com",
+  "agents": [
+    {
+      "agent_key": "7d2f4e8a1b3c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e",
+      "model_id": "gns-support-bot-v1",
+      "creator_org": "gcrumbs.com",
+      "deployer_org": "demo.gcrumbs.com",
+      "model_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "territory_cells": [596538758865788927],
+      "territory_resolution": 4,
+      "delegation_cert_url": "https://demo.gcrumbs.com/.well-known/gns-aip-delegation/support-bot.json",
+      "capabilities": ["chat@", "support@", "orders@"],
+      "safety_certs": [
+        "https://gcrumbs.com/ai-transparency"
+      ],
+      "jurisdiction_binding": {
+        "EU": {
+          "regulations": ["EU AI Act", "GDPR"],
+          "risk_class": "medium",
+          "disclosure_required": true
+        },
+        "US": {
+          "regulations": ["FTC Act §5"],
+          "risk_class": "low",
+          "disclosure_required": false
+        }
+      }
+    }
+  ],
+  "updated_at": "2026-02-28T12:00:00Z"
+}

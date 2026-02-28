@@ -13,6 +13,7 @@
 
 import type { AutofillData } from '../utils/messages';
 import { initAuthBridge } from './auth-bridge';
+import { initAipDetector } from './aip-detector';
 import './content.css';
 
 // ============================================================
@@ -391,6 +392,9 @@ function handleFocus(e: FocusEvent): void {
 function init(): void {
   // Initialize GNS Auth bridge (connects Auth SDK on page ↔ extension)
   initAuthBridge();
+
+  // Initialize AIP agent detector (meta tags, globals, SDK events)
+  initAipDetector();
 
   // Initial scan
   currentForms = detectLoginForms();
