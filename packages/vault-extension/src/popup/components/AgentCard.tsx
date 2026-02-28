@@ -71,8 +71,11 @@ export function AgentCard() {
 
     const fetchAipData = useCallback(async () => {
         try {
+            console.log('[AgentCard] fetchAipData called');
             const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            console.log('[AgentCard] tab:', tab?.id, tab?.url);
             if (!tab?.id) {
+                console.log('[AgentCard] No tab id, bailing');
                 setLoading(false);
                 return;
             }
@@ -82,13 +85,17 @@ export function AgentCard() {
                 tabId: tab.id,
             } as any);
 
+            console.log('[AgentCard] response:', JSON.stringify(res).slice(0, 200));
+
             if (res.success && res.data && res.data.agent_count > 0) {
+                console.log('[AgentCard] Setting data! agents:', res.data.agent_count);
                 setData(res.data);
-                // Auto-expand first agent
                 if (res.data.agents.length === 1) setExpandedAgent(0);
+            } else {
+                console.log('[AgentCard] No agents. success:', res.success, 'data:', !!res.data);
             }
-        } catch {
-            // Silent fail
+        } catch (e) {
+            console.error('[AgentCard] Error:', e);
         } finally {
             setLoading(false);
         }

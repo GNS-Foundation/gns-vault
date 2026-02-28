@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { sendMessage, copyToClipboard, truncateKey, formatDate } from '../helpers';
 import { DnsSiteCard } from './DnsSiteCard';
+import { AgentCard } from './AgentCard';
 
 interface IdentityData {
   publicKey: string;
@@ -62,6 +63,9 @@ export function IdentityTab() {
 
   return (
     <div>
+      {/* AI Agent Identity */}
+      <AgentCard />
+
       {/* Current Site Identity */}
       <DnsSiteCard />
 
