@@ -4,6 +4,25 @@
   "description": "GNS Auth SDK — Add 'Sign in with GNS' to any website in one script tag",
   "author": "GNS Foundation",
   "license": "MIT",
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/GNS-Foundation/gns-vault.git",
+    "directory": "packages/auth-sdk"
+  },
+  "homepage": "https://github.com/GNS-Foundation/gns-vault/tree/main/packages/auth-sdk",
+  "keywords": [
+    "gns",
+    "auth",
+    "identity",
+    "decentralized",
+    "ed25519",
+    "aip",
+    "ai-agent"
+  ],
   "type": "module",
   "main": "./dist/gns-auth.js",
   "types": "./dist/gns-auth.d.ts",
@@ -13,7 +32,9 @@
       "types": "./dist/gns-auth.d.ts"
     }
   },
-  "files": ["dist/"],
+  "files": [
+    "dist/"
+  ],
   "scripts": {
     "build": "tsc && node build.js",
     "dev": "tsc --watch",
