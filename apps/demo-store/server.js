@@ -39,6 +39,15 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Serve .well-known with CORS for AIP discovery
+app.use('/.well-known', express.static(path.join(__dirname, 'public', '.well-known'), {
+  setHeaders: (res) => {
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=3600');
+  }
+}));
+
 // Serve static files from current directory
 app.use(express.static(path.join(__dirname), {
   maxAge: '1h',
@@ -47,15 +56,6 @@ app.use(express.static(path.join(__dirname), {
       res.setHeader('Cache-Control', 'no-cache');
     }
   },
-}));
-
-// Serve .well-known with CORS for AIP discovery
-app.use('/.well-known', express.static(path.join(__dirname, 'public', '.well-known'), {
-  setHeaders: (res) => {
-    res.setHeader('Content-Type', 'application/json');
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Cache-Control', 'public, max-age=3600');
-  }
 }));
 
 // SPA fallback — serve index.html for all routes
